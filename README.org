@@ -47,7 +47,7 @@ write mode when it starts. The bridge will open this fifo in read mode.
 The second one will be called =input= and will be opened by the game in read
 mode. The bridge will open this fifo in write mode.
 
-On every frame, the game *MUST* write the text ="OK\n"= to the vblank fifo. This
+On every frame, the game *MUST* write the text =OK\n= to the vblank fifo. This
 will signal the bridge that it *MUST* write four bytes of data to the input
 fifo, conforming to the [[http://tasvideos.org/EmulatorResources/Mupen/M64.html#ControllerData][Controller Data]] specification of the Mupen64 format.
 This data will be interpreted by the game as actions for Mario to take.
@@ -55,10 +55,10 @@ This data will be interpreted by the game as actions for Mario to take.
 The bridge *MUST* block on waiting for the vblank fifo to be written to by the
 game and the game *MUST* block on the input fifo being written to by the bridge.
 
-When the game is exiting, the game *SHOULD* write ="BYE"= to the vblank fifo.
-When the bridge recieves a ="BYE"= message, it *MUST* exit.
+When the game is exiting, the game *SHOULD* write =BYE= to the vblank fifo.
+When the bridge recieves a =BYE= message, it *MUST* exit.
 
-If the bridge recieves any message other than ="OK\n"= or =BYE=, then the bridge
+If the bridge recieves any message other than =OK\n= or =BYE=, then the bridge
 *MUST* log this, as it is a bug. The bridge *MAY* crash if it is desired.
 
 * Usage instructions
