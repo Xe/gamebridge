@@ -1,0 +1,53 @@
+diff --git a/src/game/mario.c b/src/game/mario.c
+index 89f5562..d9bdb16 100644
+--- a/src/game/mario.c
++++ b/src/game/mario.c
+@@ -1865,7 +1866,7 @@ void init_mario_from_save_file(void) {
+         save_file_get_total_star_count(gCurrSaveFileNum - 1, COURSE_MIN - 1, COURSE_MAX - 1);
+     gMarioState->numKeys = 0;
+ 
+-    gMarioState->numLives = 4;
++    gMarioState->numLives = 99;
+     gMarioState->health = 0x880;
+ 
+     gMarioState->unkB8 = gMarioState->numStars;
+diff --git a/src/game/mario_actions_cutscene.c b/src/game/mario_actions_cutscene.c
+index 6f12575..8aa7b3e 100644
+--- a/src/game/mario_actions_cutscene.c
++++ b/src/game/mario_actions_cutscene.c
+@@ -1183,7 +1183,7 @@ s32 act_death_exit(struct MarioState *m) {
+ #else
+         play_sound(SOUND_MARIO_OOOF2, m->marioObj->header.gfx.cameraToObject);
+ #endif
+-        m->numLives--;
++        //m->numLives--;
+         // restore 7.75 units of health
+         m->healCounter = 31;
+     }
+@@ -1199,7 +1199,7 @@ s32 act_unused_death_exit(struct MarioState *m) {
+ #else
+         play_sound(SOUND_MARIO_OOOF2, m->marioObj->header.gfx.cameraToObject);
+ #endif
+-        m->numLives--;
++        //m->numLives--;
+         // restore 7.75 units of health
+         m->healCounter = 31;
+     }
+@@ -1215,7 +1215,7 @@ s32 act_falling_death_exit(struct MarioState *m) {
+ #else
+         play_sound(SOUND_MARIO_OOOF2, m->marioObj->header.gfx.cameraToObject);
+ #endif
+-        m->numLives--;
++        //m->numLives--;
+         // restore 7.75 units of health
+         m->healCounter = 31;
+     }
+@@ -1259,7 +1259,7 @@ s32 act_special_death_exit(struct MarioState *m) {
+     }
+ 
+     if (launch_mario_until_land(m, ACT_HARD_BACKWARD_GROUND_KB, MARIO_ANIM_BACKWARD_AIR_KB, -24.0f)) {
+-        m->numLives--;
++        //m->numLives--;
+         m->healCounter = 31;
+     }
+     // show mario

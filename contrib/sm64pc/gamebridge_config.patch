@@ -1,0 +1,50 @@
+diff --git a/src/pc/configfile.c b/src/pc/configfile.c
+index 10ff1e6..b8b1b4b 100644
+--- a/src/pc/configfile.c
++++ b/src/pc/configfile.c
+@@ -29,6 +29,7 @@ struct ConfigOption {
+ /*
+  *Config options and default values
+  */
++bool configGameBridge            = false;
+ bool configFullscreen            = false;
+ // Keyboard mappings (scancode values)
+ unsigned int configKeyA          = 0x26;
+@@ -47,6 +48,7 @@ unsigned int configKeyStickRight = 0x20;
+ 
+ 
+ static const struct ConfigOption options[] = {
++    {.name = "gamebridge",     .type = CONFIG_TYPE_BOOL, .boolValue = &configGameBridge},
+     {.name = "fullscreen",     .type = CONFIG_TYPE_BOOL, .boolValue = &configFullscreen},
+     {.name = "key_a",          .type = CONFIG_TYPE_UINT, .uintValue = &configKeyA},
+     {.name = "key_b",          .type = CONFIG_TYPE_UINT, .uintValue = &configKeyB},
+diff --git a/src/pc/configfile.h b/src/pc/configfile.h
+index ae9070b..7e55613 100644
+--- a/src/pc/configfile.h
++++ b/src/pc/configfile.h
+@@ -1,6 +1,7 @@
+ #ifndef CONFIGFILE_H
+ #define CONFIGFILE_H
+ 
++extern bool         configGameBridge;
+ extern bool         configFullscreen;
+ extern unsigned int configKeyA;
+ extern unsigned int configKeyB;
+diff --git a/src/pc/controller/controller_entry_point.c b/src/pc/controller/controller_entry_point.c
+index faf91f5..be8e773 100644
+--- a/src/pc/controller/controller_entry_point.c
++++ b/src/pc/controller/controller_entry_point.c
+@@ -5,11 +5,13 @@
+ #include "controller_keyboard.h"
+ 
+ #include "controller_sdl.h"
++#include "controller_gamebridge.h"
+ 
+ static struct ControllerAPI *controller_implementations[] = {
+     &controller_recorded_tas,
+     &controller_sdl,
+     &controller_keyboard,
++    &controller_gamebridge,
+ };
+ 
+ s32 osContInit(OSMesgQueue *mq, u8 *controllerBits, OSContStatus *status) {

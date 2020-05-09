@@ -1,0 +1,144 @@
+#+TITLE: gamebridge
+
+An interface between games that take Nintendo 64 controller input and just about
+anything else your heart desires. 
+
+* High level ideas
+
+The Rust program has two threads, one is getting the inputs from (in this case
+Twitch chat) and the other is doing the file I/O to the game. The game bridge
+thread has two file descriptors open, a fifo for feeding inputs to the game and
+a fifo opened by the game for signaling vblanks. The game will then write a
+readiness signal to the rust program and read the button data fifo. Then things
+will progress normally.
+
+** Future considerations for streaming games to a browser
+
+The getting the input thread of the rust program *SHOULD* have some logic for
+telling how long ago it got liveness of the input source (explicitly vaguely
+defined to allow a controller to sit there and do nothing as long as it still
+exists), and then "sticking" it until, say, 10 frames have passed and then it
+will block infinitely, freezing the game in place until the other end comes
+back.
+
+** Goals
+
++ Use blocking I/O to have the kernel help with this
++ Use threads to their fullest potential
++ Unix fifos are great, let's use them
++ Understand linear interpolation better
++ Create a surreal demo on Twitch
+
+* Protocol
+
+The protocol between the game and the bridge will be as follows (with input data
+based on the [[http://tasvideos.org/EmulatorResources/Mupen/M64.html][Mupen64 demo format]]). Two unix fifos will be created by the game:
+
++ =vblank=
++ =input=
+
+The game and the bridge will both need to take care that the files are opened in
+*unbuffered I/O modes*. This can be done with 
+=setvbuf(f, (char *)NULL, _IONBF, 0);= in C and is the default in Rust.
+
+The first one will be called =vblank= and will then be opened by the game in
+write mode when it starts. The bridge will open this fifo in read mode. 
+
+The second one will be called =input= and will be opened by the game in read
+mode. The bridge will open this fifo in write mode.
+
+On every frame, the game *MUST* write the text ="OK\n"= to the vblank fifo. This
+will signal the bridge that it *MUST* write four bytes of data to the input
+fifo, conforming to the [[http://tasvideos.org/EmulatorResources/Mupen/M64.html#ControllerData][Controller Data]] specification of the Mupen64 format.
+This data will be interpreted by the game as actions for Mario to take.
+
+The bridge *MUST* block on waiting for the vblank fifo to be written to by the
+game and the game *MUST* block on the input fifo being written to by the bridge.
+
+When the game is exiting, the game *SHOULD* write ="BYE"= to the vblank fifo.
+When the bridge recieves a ="BYE"= message, it *MUST* exit.
+
+If the bridge recieves any message other than ="OK\n"= or =BYE=, then the bridge
+*MUST* log this, as it is a bug. The bridge *MAY* crash if it is desired.
+
+* Usage instructions
+
+Currently this is implemented with a fork of the [[https://github.com/sm64pc/sm64pc][Super Mario 64 PC Port]]. The
+needed input bridge is implemented as a controller. You will need to get a copy
+of the git repo of the Super Mario 64 PC port and copy =controller_gamebridge.c=
+and =controller_gamebridge.h= from =contrib/sm64pc= to =src/pc/controller=. Then
+apply =gamebridge_config.patch= to the source code with =git apply=. You may
+also want to apply =gamebridge_no_lives.patch=, as this disables the extra life
+system. Removing the number of lives on the screen is currently a work in
+progress.
+
+** Configuring gamebridge
+
+You will require the following things:
+
++ A [[https://twitch.tv][Twitch.tv]] account for this bot
++ An [[https://twitchapps.com/tmi/][OAuth token]] for the bot to log into chat
++ The twitch channel chatroom to listen for commands in
+
+You will need to copy the gamebridge binary to somewhere in your =$PATH=. You
+will also need to create a file called =.env= with the following variables:
+
+#+BEGIN_SRC sh
+TWITCH_NICK=yourbotnamehere
+TWITCH_PASS=oauth:foofoobutslol
+TWITCH_CHANNEL=yourchannelnamehere
+#+END_SRC
+
+Run the Super Mario 64 PC port at least once. This will create =sm64config.txt=
+in your current working directory (if it doesn't already exist). Open that file
+with your favorite text editor and replace:
+
+#+BEGIN_SRC
+gamebridge false
+#+END_SRC
+
+with:
+
+#+BEGIN_SRC
+gamebridge true
+#+END_SRC
+
+Now you will be able to run the game as normal and inputs to the game will be
+handled by Twitch chat.
+
+** Chat commands
+
+gamebridge emulates an analog stick with chat commands. The commands that are
+currently recognized are:
+
+| Command  | Meaning                          |
+|----------+----------------------------------|
+| =a=      | Press the A button               |
+| =b=      | Press the B button               |
+| =z=      | Press the Z button               |
+| =r=      | Press the R button               |
+| =cup=    | Press the C-up button            |
+| =cdown=  | Press the C-down button          |
+| =cleft=  | Press the C-left button          |
+| =cright= | Press the C-right button         |
+| =start=  | Press the start button           |
+| =up=     | Press up on the analog stick     |
+| =down=   | Press down on the analog stick   |
+| =left=   | Press left on the analog stick   |
+| =stop=   | Reset the analog stick to center |
+
+Chat messages, joins and parts are shown on standard error. The output of this
+program is safe to show on stream.
+
+** Analog stick considerations
+
+Currently analog stick inputs will stick for about 270 frames and button inputs
+will stick for about 20 frames before drifting back to neutral. The start button
+is special however. Inputs to the start button will stick for 5 frames at most. 
+
+** Logging Levels
+
+To change the logging detail of gamebridge, set the =RUST_LOG= environment
+variable [[https://docs.rs/env_logger/0.7.1/env_logger/#example][according to the =env_logger= crate's documentation]].
+=RUST_LOG=gamebridge=debug= will dump all of the input data (in hex format) as
+well as details about some of the linear interpolation (lerp) math.
